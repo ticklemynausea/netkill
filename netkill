@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+
+# Usage: netkill [-s signum] <expr> [expr] ...
+
+exprs=()
+signal="-9"
+
+if [[ "$#" -lt 1 ]]; then
+  cat <<EOF
+Usage: netkill [-s signum] <expr> [<expr>] ...
+
+Kills processes that are bound to TCP or UDP ports
+<expr> is of the form protocol@host:port. Omitting the protocol will default to TCP
+Using an integer as an expression will signal all processes bound to that TCP port
+Otherwise, it will signal all processes bound to that TCP host.
+
+signum defaults to -9 (sigkill)
+
+Examples:
+  netkill 3000 8080
+  netkill UDP:50000
+  netkill my.frontend.local my.backend.local localhost:9999
+EOF
+
+  exit 1
+fi
+
+for arg in "$@"; do
+  if [[ $arg =~ ^-[0-9]+$ ]]; then
+    signal=$arg
+  elif [[ $arg =~ ^TCP.*$|^UDP.*$ ]]; then
+    exprs+=("-i$arg")
+  elif [[ $arg =~ ^[0-9]+$ ]]; then
+    exprs+=("-iTCP:$arg")
+  else
+    exprs+=("-iTCP@$arg")
+  fi
+done
+
+for expr in "${exprs[@]}"; do
+  processes=$(lsof "$expr")
+  echo "$processes"
+
+  for process in $(echo "$processes" | tail -n +2 | awk '{ print $2 }'); do
+    kill "$signal" "$process"
+  done
+done
