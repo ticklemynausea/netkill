@@ -2,31 +2,45 @@
 
 # Usage: netkill [-s signum] <expr> [expr] ...
 
-exprs=()
-signal="-9"
+function usage {
+  bright="[37;1m"
+  reset="[0m"
 
-if [[ "$#" -lt 1 ]]; then
   cat <<EOF
-Usage: netkill [-s signum] <expr> [<expr>] ...
+${bright}netkill${reset}
 
-Kills processes that are bound to TCP or UDP ports
-<expr> is of the form protocol@host:port. Omitting the protocol will default to TCP
-Using an integer as an expression will signal all processes bound to that TCP port
-Otherwise, it will signal all processes bound to that TCP host.
+Signals processes that have sockets bound to TCP or UDP ports.
 
-signum defaults to -9 (sigkill)
+${bright}Usage:${reset} netkill [-s <signum>] <expr> [<expr>] ...
 
-Examples:
+${bright}<expr>${reset} is of the form ${bright}protocol@host:port${reset}. Omitting the protocol will default to TCP. Using an integer as an expression will signal all processes bound to that TCP port. Otherwise, it will signal all processes bound to that TCP host.
+
+${bright}<signum>${reset} defaults to -9 (sigkill)
+
+Usage examples
+
   netkill 3000 8080
   netkill UDP:50000
   netkill my.frontend.local my.backend.local localhost:9999
+  netkill UDP@my.service.local:15000
 EOF
 
   exit 1
+}
+
+if [[ "$#" -lt 1 ]]; then
+  usage
+  exit 0
 fi
 
+exprs=()
+signal="-9"
+
 for arg in "$@"; do
-  if [[ $arg =~ ^-[0-9]+$ ]]; then
+  if [[ $arg == "-h" ]]; then
+    usage
+    exit 0
+  elif [[ $arg =~ ^-[0-9]+$ ]]; then
     signal=$arg
   elif [[ $arg =~ ^TCP.*$|^UDP.*$ ]]; then
     exprs+=("-i$arg")
