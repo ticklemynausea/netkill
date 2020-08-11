@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -euo pipefail
+
 # Usage: netkill [-s signum] <expr> [expr] ...
 
 function usage {
